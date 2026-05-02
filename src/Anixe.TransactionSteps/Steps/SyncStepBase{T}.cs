@@ -9,6 +9,6 @@ namespace Anixe.TransactionSteps
   {
     public bool IsAsync() => false;
 
-    public Task ProcessAsync(CancellationToken token) => throw new NotImplementedException();
+    public Task ProcessAsync(CancellationToken token) => throw new NotSupportedException();
   }
 }

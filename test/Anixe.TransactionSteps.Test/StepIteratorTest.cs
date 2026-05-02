@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
@@ -17,20 +17,11 @@ namespace Anixe.TransactionSteps.Test
     public StepIteratorTest()
     {
       this.ctx = new PropertyBag();
-      this.steps = CreateSteps();
       this.subject = new StepIterator<IPropertyBag>(ctx);
-    }
-
-    public LinkedList<IStep> CreateSteps()
-    {
-      return new LinkedList<IStep>
-      (
-        new List<IStep>
-        {
+      this.steps = new([
           new CtxStep<IPropertyBag>((_) => {  }, (_) => true),
           new CtxStep<IPropertyBag>((_) => {  }, (_) => true),
-        }
-      );
+        ]);
     }
 
     [Fact]

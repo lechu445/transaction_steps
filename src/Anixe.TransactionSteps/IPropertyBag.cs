@@ -1,8 +1,15 @@
 ﻿namespace Anixe.TransactionSteps
 {
   /// <summary>
-  /// A collection that contains items resolvable by type or by name and type.
+  /// Represents a collection of strongly-typed properties that can be accessed, modified, or removed by type and
+  /// optionally by name. Provides methods for querying, retrieving, setting, and cloning properties in a flexible and
+  /// type-safe manner.
   /// </summary>
+  /// <remarks>The <see cref="IPropertyBag"/> interface is designed to store and manage properties of various
+  /// types, with optional support for named properties. It allows for operations such as checking for the existence of
+  /// a property, retrieving properties with or without default values, and cloning the property bag with optional
+  /// exclusions. This interface is particularly useful for scenarios where dynamic or loosely-typed property storage is
+  /// required, while still maintaining type safety.</remarks>
   public interface IPropertyBag
   {
     /// <summary>

@@ -1,8 +1,7 @@
-namespace Anixe.TransactionSteps.Benchmark
+﻿namespace Anixe.TransactionSteps.Benchmark
 {
-  internal class SyncStep : SyncStepBase<IPropertyBag>, IStep<IPropertyBag>
+  internal sealed class SyncStep : SyncStepBase<IPropertyBag>, IStep<IPropertyBag>
   {
-    private int tmp;
     public bool CanProcess()
     {
       return true;
@@ -10,7 +9,6 @@ namespace Anixe.TransactionSteps.Benchmark
 
     public void Process()
     {
-      tmp++;
     }
   }
 }

@@ -19,7 +19,7 @@ namespace Anixe.TransactionSteps.Benchmark
       this.ctx = new PropertyBag();
       this.syncSteps = new LinkedList<IStep>(CreateSyncSteps(20));
       this.asyncSteps = new LinkedList<IStep>(CreateAyncSteps(20));
-      var tmp = new List<IStep> { };
+      var tmp = new List<IStep>();
       tmp.AddRange(this.syncSteps);
       tmp.AddRange(this.asyncSteps);
       this.allSteps = new LinkedList<IStep>(tmp);

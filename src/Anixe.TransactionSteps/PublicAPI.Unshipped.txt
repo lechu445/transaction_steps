@@ -38,7 +38,7 @@ Anixe.TransactionSteps.IStep.Process() -> void
 Anixe.TransactionSteps.IStep.ProcessAsync(System.Threading.CancellationToken token) -> System.Threading.Tasks.Task!
 Anixe.TransactionSteps.IStep.ProcessedItemsCount.get -> int
 Anixe.TransactionSteps.IStep.ProcessedItemsCount.set -> void
-Anixe.TransactionSteps.IStep.Services.get -> System.IServiceProvider?
+Anixe.TransactionSteps.IStep.Services.get -> System.IServiceProvider!
 Anixe.TransactionSteps.IStep.Services.set -> void
 Anixe.TransactionSteps.IStep.TimeTaken.get -> double
 Anixe.TransactionSteps.IStep.TimeTaken.set -> void
@@ -107,7 +107,7 @@ Anixe.TransactionSteps.Predefined.StepProxyBase<T>.Neighbourood.get -> System.Co
 Anixe.TransactionSteps.Predefined.StepProxyBase<T>.Neighbourood.set -> void
 Anixe.TransactionSteps.Predefined.StepProxyBase<T>.ProcessedItemsCount.get -> int
 Anixe.TransactionSteps.Predefined.StepProxyBase<T>.ProcessedItemsCount.set -> void
-Anixe.TransactionSteps.Predefined.StepProxyBase<T>.Services.get -> System.IServiceProvider?
+Anixe.TransactionSteps.Predefined.StepProxyBase<T>.Services.get -> System.IServiceProvider!
 Anixe.TransactionSteps.Predefined.StepProxyBase<T>.Services.set -> void
 Anixe.TransactionSteps.Predefined.StepProxyBase<T>.StepProxyBase(Anixe.TransactionSteps.AsyncStepBase<T!>! asyncStep) -> void
 Anixe.TransactionSteps.Predefined.StepProxyBase<T>.StepProxyBase(Anixe.TransactionSteps.SyncStepBase<T!>! step) -> void
@@ -147,7 +147,7 @@ Anixe.TransactionSteps.StepBase.Neighbourood.get -> System.Collections.Generic.L
 Anixe.TransactionSteps.StepBase.Neighbourood.set -> void
 Anixe.TransactionSteps.StepBase.ProcessedItemsCount.get -> int
 Anixe.TransactionSteps.StepBase.ProcessedItemsCount.set -> void
-Anixe.TransactionSteps.StepBase.Services.get -> System.IServiceProvider?
+Anixe.TransactionSteps.StepBase.Services.get -> System.IServiceProvider!
 Anixe.TransactionSteps.StepBase.Services.set -> void
 Anixe.TransactionSteps.StepBase.StepBase() -> void
 Anixe.TransactionSteps.StepBase.TimeTaken.get -> double

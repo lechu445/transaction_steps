@@ -1,9 +1,18 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using Anixe.TransactionSteps.Helpers;
 
 namespace Anixe.TransactionSteps
 {
+  /// <summary>
+  /// Represents a container for storing and retrieving properties by type or name.
+  /// </summary>
+  /// <remarks>The <see cref="PropertyBag"/> class provides a flexible mechanism for managing properties that
+  /// can be accessed either by their type or by a string name. It supports adding, retrieving, updating, and removing
+  /// properties, as well as cloning the property bag with optional exclusions.  This class is particularly useful in
+  /// scenarios where a loosely-typed collection of properties is needed, such as in extensibility frameworks or
+  /// metadata storage.</remarks>
   public class PropertyBag : IPropertyBag
   {
     protected readonly Dictionary<Type, object?> typedProperties;
@@ -11,11 +20,11 @@ namespace Anixe.TransactionSteps
 
     public PropertyBag()
     {
-      this.typedProperties = new Dictionary<Type, object?>();
       this.namedProperties = new Dictionary<string, object?>();
+      this.typedProperties = new Dictionary<Type, object?>();
     }
 
-    private PropertyBag(IDictionary<Type, object?> typedProperties, Dictionary<string, object?> namedProperties)
+    private PropertyBag(Dictionary<Type, object?> typedProperties, Dictionary<string, object?> namedProperties)
     {
       this.namedProperties = new Dictionary<string, object?>(namedProperties);
       this.typedProperties = new Dictionary<Type, object?>(typedProperties);
@@ -24,11 +33,15 @@ namespace Anixe.TransactionSteps
     private PropertyBag(IEnumerable<KeyValuePair<Type, object?>> typedProperties, Dictionary<string, object?> namedProperties)
     {
       this.namedProperties = new Dictionary<string, object?>(namedProperties);
+#if NETSTANDARD2_0
       this.typedProperties = new Dictionary<Type, object?>();
       foreach (var prop in typedProperties)
       {
         this.typedProperties.Add(prop.Key, prop.Value);
       }
+#else
+      this.typedProperties = new Dictionary<Type, object?>(typedProperties);
+#endif
     }
 
     public bool Contains<T>()
@@ -38,7 +51,12 @@ namespace Anixe.TransactionSteps
 
     public bool Contains<T>(string name)
     {
-      return this.namedProperties.ContainsKey(name);
+      if (name is null)
+      {
+        ThrowHelper.ThrowArgumentNullException(nameof(name));
+      }
+
+      return this.namedProperties.TryGetValue(name!, out var item) && item is T;
     }
 
     public virtual void Set<T>(T property)
@@ -49,7 +67,12 @@ namespace Anixe.TransactionSteps
 
     public virtual void Set<T>(string name, T property)
     {
-      this.namedProperties[name] = property;
+      if (name is null)
+      {
+        ThrowHelper.ThrowArgumentNullException(nameof(name));
+      }
+
+      this.namedProperties[name!] = property;
     }
 
     public T? Get<T>()
@@ -65,7 +88,12 @@ namespace Anixe.TransactionSteps
 
     public T? Get<T>(string name)
     {
-      if (this.namedProperties.TryGetValue(name, out var item))
+      if (name is null)
+      {
+        ThrowHelper.ThrowArgumentNullException(nameof(name));
+      }
+
+      if (this.namedProperties.TryGetValue(name!, out var item))
       {
         return (T?)item;
       }
@@ -89,7 +117,12 @@ namespace Anixe.TransactionSteps
 
     public T GetRequired<T>(string name)
     {
-      if (this.namedProperties.TryGetValue(name, out var item))
+      if (name is null)
+      {
+        ThrowHelper.ThrowArgumentNullException(nameof(name));
+      }
+
+      if (this.namedProperties.TryGetValue(name!, out var item))
       {
         return (T)item!;
       }
@@ -97,7 +130,7 @@ namespace Anixe.TransactionSteps
       ThrowRequired();
       return default!; // never reached
 
-      static void ThrowRequired() => throw new InvalidOperationException($"{typeof(PropertyBag).Name} requires to contain type {typeof(T).Name}");
+      static void ThrowRequired() => throw new InvalidOperationException($"{typeof(PropertyBag).Name} requires to contain type {typeof(T).Name} with provided name");
     }
 
     public bool TryGet<T>(out T value)
@@ -115,7 +148,12 @@ namespace Anixe.TransactionSteps
 
     public bool TryGet<T>(string name, out T value)
     {
-      if (this.namedProperties.TryGetValue(name, out var item))
+      if (name is null)
+      {
+        ThrowHelper.ThrowArgumentNullException(nameof(name));
+      }
+
+      if (this.namedProperties.TryGetValue(name!, out var item))
       {
         value = (T)item!;
         return true;
@@ -133,7 +171,15 @@ namespace Anixe.TransactionSteps
 
     public void Unset<T>(string name)
     {
-      this.namedProperties.Remove(name);
+      if (name is null)
+      {
+        ThrowHelper.ThrowArgumentNullException(nameof(name));
+      }
+
+      if (this.namedProperties.TryGetValue(name!, out var item))
+      {
+        this.namedProperties.Remove(name);
+      }
     }
 
     public IPropertyBag Clone()
@@ -143,6 +189,11 @@ namespace Anixe.TransactionSteps
 
     public IPropertyBag Clone(Type[] exclude)
     {
+      if (exclude is null)
+      {
+        throw new ArgumentNullException(nameof(exclude));
+      }
+
       var cloned = this.typedProperties.Where(kvp => !Array.Exists(exclude, item => item == kvp.Key));
       return new PropertyBag(
         cloned,

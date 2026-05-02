@@ -20,9 +20,9 @@ namespace Anixe.TransactionSteps.Predefined
 
     public bool IsAsync() => false;
 
-    public void Process() => this.action?.Invoke(this);
+    public void Process() => this.action.Invoke(this);
 
-    public Task ProcessAsync(CancellationToken token) => Task.FromException(new NotImplementedException());
+    public Task ProcessAsync(CancellationToken token) => Task.FromException(new NotSupportedException());
 
     private bool True(IStep step) => true;
   }

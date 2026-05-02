@@ -3,12 +3,20 @@ using System.Collections.Generic;
 
 namespace Anixe.TransactionSteps
 {
+  /// <summary>
+  /// Represents the base class for a processing step in a workflow or pipeline.
+  /// </summary>
+  /// <remarks>This abstract class provides common properties and functionality for derived step classes,
+  /// including management of step name, processing state, and neighboring steps in a sequence.</remarks>
   public abstract class StepBase
   {
     private string? stepName;
 
-    public IServiceProvider? Services { get; set; }
+    public IServiceProvider Services { get; set; } = AlwaysThrowingServiceProvider.Instance;
 
+    /// <summary>
+    /// Gets or sets the name of the step. The default is step type name.
+    /// </summary>
     public string Name
     {
       get

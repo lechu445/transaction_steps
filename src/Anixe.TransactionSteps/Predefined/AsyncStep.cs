@@ -9,6 +9,15 @@ namespace Anixe.TransactionSteps.Predefined
     private readonly Func<IStep, Task> action;
     private readonly Predicate<IStep> canProcessPredicate;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="AsyncStep"/> class with the specified asynchronous action and an optional
+    /// predicate to determine if the step can be processed.
+    /// </summary>
+    /// <param name="action">The asynchronous action to execute for this step. The action receives the current step as its parameter and
+    /// returns a Task representing the asynchronous operation.</param>
+    /// <param name="canProcessPredicate">An optional predicate that determines whether the step can be processed. If null, the step is always considered
+    /// processable.</param>
+    /// <exception cref="ArgumentNullException">Thrown if action is null.</exception>
     public AsyncStep(Func<IStep, Task> action, Predicate<IStep>? canProcessPredicate = null)
     {
       this.action = action ?? throw new ArgumentNullException(nameof(action));
@@ -25,9 +34,7 @@ namespace Anixe.TransactionSteps.Predefined
     {
       if (token.IsCancellationRequested)
       {
-        var tcs = new TaskCompletionSource<int>();
-        tcs.SetCanceled();
-        return tcs.Task;
+        return Task.FromCanceled(token);
       }
 
       return this.action(this);

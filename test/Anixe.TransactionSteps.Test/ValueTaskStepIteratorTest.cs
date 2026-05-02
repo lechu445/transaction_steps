@@ -1,6 +1,6 @@
+﻿#nullable enable
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -17,104 +17,87 @@ namespace Anixe.TransactionSteps.Test
     public ValueTaskStepIteratorTest()
     {
       this.ctx = new PropertyBag();
-      this.ctx.Set<Tuple<int>>(Tuple.Create(0));
       this.subject = new ValueTaskStepIterator<IPropertyBag>();
     }
 
-    public List<IValueTaskStep> CreateSyncSteps()
+    public static IValueTaskStep CreateSyncStep(Action action, bool mustProcessAfterCancel = false)
     {
-      return new List<IValueTaskStep>
+      return new CtxValueTaskStep<IPropertyBag>(
+        syncAction: _ => action(),
+        asyncAction: null,
+        canProcessPredicate: () => true)
       {
-        new CtxValueTaskStep<IPropertyBag>(asyncAction: null, syncAction: (ctx) =>
-        {
-          var idx =  ctx.Context.Get<Tuple<int>>().Item1 + 1;
-          ctx.Context.Set<Tuple<int>>(Tuple.Create(idx));
-        }, canProcessPredicate: () => true),
-        new CtxValueTaskStep<IPropertyBag>(asyncAction: null, syncAction: (ctx) =>
-        {
-          var idx =  ctx.Context.Get<Tuple<int>>().Item1 + 1;
-          ctx.Context.Set<Tuple<int>>(Tuple.Create(idx));
-        }, canProcessPredicate: () => { return true; }),
+        MustProcessAfterCancel = mustProcessAfterCancel,
       };
     }
 
-    public List<IValueTaskStep> CreateAyncSteps()
+    public static IValueTaskStep CreateAsyncStep(Action action, bool mustProcessAfterCancel = false)
     {
-      var path = Path.Combine(Anixe.QualityTools.TestExample.GetExamplesDirPath(), "data.txt");
-      return new List<IValueTaskStep>
+      return new CtxValueTaskStep<IPropertyBag>(
+        syncAction: null,
+        asyncAction: async (_, _) => action(),
+        canProcessPredicate: () => true)
       {
-        new CtxValueTaskStep<IPropertyBag>(asyncAction: async (ctx, token) =>
-        {
-          var val = await File.ReadAllTextAsync(path);
-          var idx =  ctx.Context.Get<Tuple<int>>().Item1 + int.Parse(val);
-          ctx.Context.Set<Tuple<int>>(Tuple.Create(idx));
-        }, syncAction: null, canProcessPredicate: () => true),
-        new CtxValueTaskStep<IPropertyBag>(asyncAction: async (ctx, token) =>
-        {
-          var val = await File.ReadAllTextAsync(path);
-          var idx =  ctx.Context.Get<Tuple<int>>().Item1 + int.Parse(val);
-          ctx.Context.Set<Tuple<int>>(Tuple.Create(idx));
-        }, syncAction: null, canProcessPredicate: () => true),
+        MustProcessAfterCancel = mustProcessAfterCancel,
       };
     }
 
-    public List<IValueTaskStep> CreateAyncSteps(CancellationTokenSource cts, bool mustProcess)
+    public static IValueTaskStep CreateStepWithPredicate(Action action, Func<bool> canProcessPredicate, bool mustProcessAfterCancel = false)
     {
-      var path = Path.Combine(Anixe.QualityTools.TestExample.GetExamplesDirPath(), "data.txt");
-      return new List<IValueTaskStep>
+      return new CtxValueTaskStep<IPropertyBag>(
+        syncAction: _ => action(),
+        asyncAction: null,
+        canProcessPredicate: canProcessPredicate)
       {
-        new CtxValueTaskStep<IPropertyBag>(asyncAction: async (ctx, token) =>
-        {
-          var val = await File.ReadAllTextAsync(path);
-          var idx =  ctx.Context.Get<Tuple<int>>().Item1 + int.Parse(val);
-          ctx.Context.Set<Tuple<int>>(Tuple.Create(idx));
-          cts.Cancel();
-        }, syncAction: null, canProcessPredicate: () => true),
-        new CtxValueTaskStep<IPropertyBag>(asyncAction: async (ctx, token) =>
-        {
-          var val = await File.ReadAllTextAsync(path);
-          var idx =  ctx.Context.Get<Tuple<int>>().Item1 + int.Parse(val);
-          ctx.Context.Set<Tuple<int>>(Tuple.Create(idx));
-        }, syncAction: null, canProcessPredicate: () => true) { MustProcessAfterCancel = mustProcess },
+        MustProcessAfterCancel = mustProcessAfterCancel,
       };
     }
 
-    public List<IValueTaskStep> CreateAyncStepsThrowEx()
+    public static IValueTaskStep CreateStepWithBothActions(Action syncAction, Action asyncAction, bool mustProcessAfterCancel = false)
     {
-      var path = Path.Combine(Anixe.QualityTools.TestExample.GetExamplesDirPath(), "data.txt");
-      return new List<IValueTaskStep>
+      return new CtxValueTaskStep<IPropertyBag>(
+        syncAction: _ => syncAction(),
+        asyncAction: async (_, _) => asyncAction(),
+        canProcessPredicate: () => true)
       {
-        new CtxValueTaskStep<IPropertyBag>(asyncAction: async (ctx, token) =>
-        {
-          var val = await File.ReadAllTextAsync("bllaaach");
-          var idx =  ctx.Context.Get<Tuple<int>>().Item1 + int.Parse(val);
-          ctx.Context.Set<Tuple<int>>(Tuple.Create(idx));
-        }, syncAction: null, canProcessPredicate: () => true),
-        new CtxValueTaskStep<IPropertyBag>(asyncAction: async (ctx, token) =>
-        {
-          var val = await File.ReadAllTextAsync(path);
-          var idx =  ctx.Context.Get<Tuple<int>>().Item1 + int.Parse(val);
-          ctx.Context.Set<Tuple<int>>(Tuple.Create(idx));
-        }, syncAction: null, canProcessPredicate: () => true),
+        MustProcessAfterCancel = mustProcessAfterCancel,
       };
+    }
+
+    [Fact]
+    public async Task Should_Return_Empty_Stats_When_Steps_Are_Empty()
+    {
+      var steps = Array.Empty<IValueTaskStep>();
+      var stats = await this.subject.IterateAllAsync(this.ctx, steps, CancellationToken.None);
+      Assert.Empty(stats);
     }
 
     [Fact]
     public async Task Should_IterateAllAsync_Over_All_Sync_Steps()
     {
-      var steps = CreateSyncSteps();
+      var calledSteps = new List<string>();
+      var steps = new IValueTaskStep[]
+      {
+        CreateSyncStep(() => calledSteps.Add("Step1")),
+        CreateSyncStep(() => calledSteps.Add("Step2")),
+      };
       await this.subject.IterateAllAsync(this.ctx, steps, CancellationToken.None);
       Assert.True(steps.All(s => s.WasFired));
-      Assert.Equal(2, ctx.Get<Tuple<int>>().Item1);
+      Assert.Equal(["Step1", "Step2"], calledSteps);
     }
 
     [Fact]
     public async Task Should_IterateAllAsync_Over_All_Async_Steps()
     {
-      var steps = CreateAyncSteps();
+      var calledSteps = new List<string>();
+      var steps = new IValueTaskStep[]
+      {
+        CreateAsyncStep(() => calledSteps.Add("AsyncStep1")),
+        CreateAsyncStep(() => calledSteps.Add("AsyncStep2")),
+      };
       await this.subject.IterateAllAsync(this.ctx, steps, CancellationToken.None);
       Assert.True(steps.All(s => s.WasFired));
-      Assert.Equal(4, ctx.Get<Tuple<int>>().Item1);
+      Assert.Equal(["AsyncStep1", "AsyncStep2"], calledSteps);
     }
 
     [Fact]
@@ -122,10 +105,23 @@ namespace Anixe.TransactionSteps.Test
     {
       using (var cts = new CancellationTokenSource())
       {
-        var steps = CreateAyncSteps(cts, mustProcess: true);
+        var calledSteps = new List<string>();
+        var steps = new IValueTaskStep[]
+        {
+          CreateAsyncStep(() =>
+          {
+            calledSteps.Add("AsyncStep1");
+            cts.Cancel();
+          }),
+          CreateAsyncStep(() =>
+          {
+            calledSteps.Add("AsyncStep2");
+          },
+          mustProcessAfterCancel: true),
+        };
         await this.subject.IterateAllAsync(this.ctx, steps, cts.Token);
         Assert.True(steps.All(s => s.WasFired));
-        Assert.Equal(4, ctx.Get<Tuple<int>>().Item1);
+        Assert.Equal(["AsyncStep1", "AsyncStep2"], calledSteps);
       }
     }
 
@@ -134,18 +130,133 @@ namespace Anixe.TransactionSteps.Test
     {
       using (var cts = new CancellationTokenSource())
       {
-        var steps = CreateAyncSteps(cts, mustProcess: false);
+        var calledSteps = new List<string>();
+        var steps = new IValueTaskStep[]
+        {
+          CreateAsyncStep(() =>
+          {
+            calledSteps.Add("AsyncStep1");
+            cts.Cancel();
+          }),
+          CreateAsyncStep(() =>
+          {
+            calledSteps.Add("AsyncStep2");
+          },
+          mustProcessAfterCancel: false)
+        };
         await this.subject.IterateAllAsync(this.ctx, steps, cts.Token);
-        Assert.Equal(1, steps.Count(s => s.WasFired));
-        Assert.Equal(2, ctx.Get<Tuple<int>>().Item1);
+        Assert.Single(steps, s => s.WasFired);
+        Assert.Equal(["AsyncStep1"], calledSteps);
       }
     }
 
     [Fact]
-    public void Should_Throw_Exception_Which_Occurred_In_Step()
+    public async Task Should_Throw_ArgumentNullException_When_Steps_Are_Null()
     {
-      var steps = CreateAyncStepsThrowEx();
-      Assert.ThrowsAsync<InvalidOperationException>(async () => await this.subject.IterateAllAsync(this.ctx, steps, CancellationToken.None));
+      await Assert.ThrowsAsync<ArgumentNullException>(async () =>
+        await this.subject.IterateAllAsync(this.ctx, null!, CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task Should_Throw_Exception_Which_Occurred_In_Step()
+    {
+      var calledSteps = new List<string>();
+      var steps = new IValueTaskStep[]
+      {
+        CreateAsyncStep(() =>
+        {
+          calledSteps.Add("AsyncStep1");
+          throw new Exception("Test exception");
+        }),
+        CreateAsyncStep(() =>
+        {
+          calledSteps.Add("AsyncStep2");
+        })
+      };
+
+      var ex = await Assert.ThrowsAsync<Exception>(async () => await this.subject.IterateAllAsync(this.ctx, steps, CancellationToken.None));
+      Assert.Equal("Test exception", ex.Message);
+      Assert.Equal(["AsyncStep1"], calledSteps);
+    }
+
+    [Fact]
+    public async Task Should_Not_Fire_Steps_When_CanProcessPredicate_Is_False()
+    {
+      var calledSteps = new List<string>();
+      var steps = new IValueTaskStep[]
+      {
+        CreateStepWithPredicate(() => calledSteps.Add("Step1"), () => false),
+        CreateStepWithPredicate(() => calledSteps.Add("Step2"), () => false)
+      };
+      await this.subject.IterateAllAsync(this.ctx, steps, CancellationToken.None);
+      Assert.All(steps, s => Assert.False(s.WasFired));
+      Assert.Empty(calledSteps);
+    }
+
+    [Fact]
+    public async Task Should_Handle_Steps_With_Both_Sync_And_Async_Actions()
+    {
+      var called = new List<string>();
+      var steps = new IValueTaskStep[]
+      {
+        CreateStepWithBothActions(() => called.Add("Sync"), () => called.Add("Async")),
+      };
+      await this.subject.IterateAllAsync(this.ctx, steps, CancellationToken.None);
+      Assert.True(steps[0].WasFired);
+      // Only async action should be called, as syncAction is only used if asyncAction is null
+      Assert.Contains("Async", called);
+    }
+
+    [Fact]
+    public async Task Should_Throw_ArgumentNullException_When_Context_Is_Null()
+    {
+      var steps = new IValueTaskStep[] { CreateSyncStep(() => { }) };
+      await Assert.ThrowsAsync<ArgumentNullException>(async () =>
+        await this.subject.IterateAllAsync(null!, steps, CancellationToken.None));
+    }
+
+    [Fact]
+    public async Task Should_IterateAllAsync_With_Mixed_MustProcessAfterCancel_Values()
+    {
+      using (var cts = new CancellationTokenSource())
+      {
+        var calledSteps = new List<string>();
+        var steps = new IValueTaskStep[]
+        {
+          CreateAsyncStep(() => { calledSteps.Add("A"); cts.Cancel(); }, mustProcessAfterCancel: false),
+          CreateAsyncStep(() => calledSteps.Add("B"), mustProcessAfterCancel: true),
+          CreateAsyncStep(() => calledSteps.Add("C"), mustProcessAfterCancel: false),
+        };
+        await this.subject.IterateAllAsync(this.ctx, steps, cts.Token);
+        Assert.True(steps[0].WasFired);
+        Assert.True(steps[1].WasFired);
+        Assert.False(steps[2].WasFired);
+        Assert.Equal(["A", "B"], calledSteps);
+      }
+    }
+
+    [Fact]
+    public async Task Should_IterateAllAsync_With_NoOp_Steps()
+    {
+      var steps = new IValueTaskStep[]
+      {
+        CreateSyncStep(() => { }),
+        CreateAsyncStep(() => { })
+      };
+      var stats = await this.subject.IterateAllAsync(this.ctx, steps, CancellationToken.None);
+      Assert.All(steps, s => Assert.True(s.WasFired));
+      Assert.NotNull(stats);
+    }
+
+    [Fact]
+    public async Task Should_Propagate_OperationCanceledException()
+    {
+      var steps = new IValueTaskStep[]
+      {
+        CreateAsyncStep(() => throw new OperationCanceledException()),
+      };
+      await Assert.ThrowsAsync<OperationCanceledException>(async () =>
+        await this.subject.IterateAllAsync(this.ctx, steps, CancellationToken.None));
     }
   }
 }

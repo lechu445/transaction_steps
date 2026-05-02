@@ -7,6 +7,9 @@ using Anixe.TransactionSteps.Helpers;
 
 namespace Anixe.TransactionSteps
 {
+  /// <summary>
+  /// Iterates over value-task steps and collects StepStat entries.
+  /// </summary>
   public class ValueTaskStepIterator<T> : IValueTaskStepIterator<T>
   {
     public async ValueTask<List<StepStat>> IterateAllAsync(
@@ -53,12 +56,20 @@ namespace Anixe.TransactionSteps
         stepWithCtx.Context = context;
       }
 
-      if (step.CanProcess())
+      if (!step.CanProcess())
       {
-        var startTimestamp = Stopwatch.GetTimestamp();
+        return;
+      }
+
+      var startTimestamp = Stopwatch.GetTimestamp();
+      try
+      {
         await step.Process(token).ConfigureAwait(false);
-        var tt = StopwatchHelper.GetElapsedTime(startTimestamp).TotalMilliseconds;
         step.WasFired = true;
+      }
+      finally
+      {
+        var tt = StopwatchHelper.GetElapsedTime(startTimestamp).TotalMilliseconds;
         step.TimeTaken = tt;
         stats.Add(StepStat.CreateFromStep(step));
       }

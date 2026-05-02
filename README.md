@@ -1,12 +1,32 @@
 # transaction_steps
 
-The idea is to reduce complexity of request processing by split into measurable steps, so:
+## Overview
 
-* Do you have a lot of logic in the application?
-* Do you have a deep dependency tree?
-* Do you need to know how much time took any transaction part?
+**transaction_steps** is a .NET library for structuring complex request processing into measurable, composable steps.
+It helps flatten deep dependency trees, improve observability, and simplify orchestration of both synchronous and asynchronous operations.
 
-Lets make it flat and simple using transaction_steps
+## Features
+
+- Compose transactions from sync and async steps
+- Collect execution statistics for each step
+- Share context between steps
+- Extend or modify the pipeline at runtime
+- Integrate with `IServiceProvider` for dependency resolution
+- Proxy and decorate steps for cross-cutting concerns
+
+## Installation
+
+Install via NuGet:
+
+```bash
+dotnet add package transaction_steps
+```
+
+Supports:
+- .NET 9  
+- .NET Standard 2.0, 2.1
+
+## Quick Start
 
 * Define a transaction made from steps or async steps
 
@@ -181,7 +201,40 @@ Lets make it flat and simple using transaction_steps
   }  
 ```
 
-## StepIteratorTest
+## Step Types
+
+### Synchronous Step
+
+```c#
+public class ApplyCalculations : SyncStepBase<IPropertyBag>, IStep<IPropertyBag>
+{
+  public bool CanProcess() { /* ... */ }
+  public void Process() { /* ... */ }
+}
+```
+
+### Asynchronous Step
+
+```c#
+public class UpdateBookInSupplierAsync : AsyncStepBase<IPropertyBag>, IStep<IPropertyBag>
+{
+  public bool CanProcess() { /* ... */ }
+  public async Task ProcessAsync(CancellationToken token) { /* ... */ }
+}
+```
+
+## Advanced Usage
+
+- **Proxy Steps:** Decorate steps for logging, error handling, etc.
+- **Dynamic Pipeline:** Add or remove steps at runtime.
+- **Context Sharing:** Use `PropertyBag` to share data between steps.
+
+## Performance
+
+Benchmarks show low overhead for both sync and async pipelines.  
+See the tables below for details.
+
+### StepIteratorTest
 
 |                                            Method |     Mean |     Error |    StdDev |  Gen 0 | Gen 1 | Gen 2 | Allocated |
 |-------------------------------------------------- |---------:|----------:|----------:|-------:|------:|------:|----------:|
@@ -190,7 +243,7 @@ Lets make it flat and simple using transaction_steps
 |   Should_Benchmark_IterateAllAsync_Over_All_Steps | 6.630 us | 0.0443 us | 0.0370 us | 0.6943 |     - |     - |   4.26 KB |
 
 
-## ValueTaskStepIteratorTest
+### ValueTaskStepIteratorTest
 
 |                                            Method |     Mean |     Error |    StdDev |  Gen 0 |  Gen 1 | Gen 2 | Allocated |
 |-------------------------------------------------- |---------:|----------:|----------:|-------:|-------:|------:|----------:|
@@ -198,7 +251,7 @@ Lets make it flat and simple using transaction_steps
 | Should_Benchmark_IterateAllAsync_Over_Async_Steps | 3.095 us | 0.0261 us | 0.0231 us | 0.4044 |      - |     - |   2.49 KB |
 |   Should_Benchmark_IterateAllAsync_Over_All_Steps | 6.175 us | 0.0448 us | 0.0397 us | 0.5569 | 0.0076 |     - |   3.43 KB |
 
-## PropertyBagTest
+### PropertyBagTest
 
 |             Method |     Mean |     Error |    StdDev |   Median | Gen 0 | Gen 1 | Gen 2 | Allocated |
 |------------------- |---------:|----------:|----------:|---------:|------:|------:|------:|----------:|
@@ -206,3 +259,11 @@ Lets make it flat and simple using transaction_steps
 | Set_Reference_Type | 3.356 us | 0.2597 us | 0.7367 us | 2.900 us |     - |     - |     - |     136 B |
 |     Get_Value_Type | 3.904 us | 0.2187 us | 0.6169 us | 4.050 us |     - |     - |     - |         - |
 | Get_Reference_Type | 2.597 us | 0.1166 us | 0.3030 us | 2.500 us |     - |     - |     - |         - |
+
+## Contributing
+
+Contributions are welcome! Please open issues or pull requests.
+
+## License
+
+This project is licensed under the MIT License. See [LICENSE](LICENSE) for details.

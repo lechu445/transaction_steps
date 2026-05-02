@@ -27,7 +27,7 @@ namespace Anixe.TransactionSteps.Predefined
       set => this.InnerStep.Context = value;
     }
 
-    public IServiceProvider? Services
+    public IServiceProvider Services
     {
       get => this.InnerStep.Services;
       set => this.InnerStep.Services = value;
